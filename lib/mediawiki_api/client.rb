@@ -18,7 +18,7 @@ module MediawikiApi
 
     alias_method :logged_in?, :logged_in
 
-    def initialize(api_url, index_url = nil, log: false)
+    def initialize(api_url, log: false, index_url: nil)
       @cookies = HTTP::CookieJar.new
       @api_url = api_url
       @index_url = index_url
