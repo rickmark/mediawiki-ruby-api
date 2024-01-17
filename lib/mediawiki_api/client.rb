@@ -14,13 +14,16 @@ module MediawikiApi
 
     attr_reader :cookies
     attr_accessor :logged_in
+    attr_reader :api_url
 
     alias_method :logged_in?, :logged_in
 
-    def initialize(url, log: false)
+    def initialize(api_url, index_url = nil, log: false)
       @cookies = HTTP::CookieJar.new
+      @api_url = api_url
+      @index_url = index_url
 
-      @conn = Faraday.new(url: url) do |faraday|
+      @conn = Faraday.new(url: api_url) do |faraday|
         faraday.request :multipart
         faraday.request :url_encoded
         faraday.response :logger if log
@@ -114,8 +117,13 @@ module MediawikiApi
       response
     end
 
+    def index_url
+      @index_url if @index_url
+      @api_url.gsub(/api.php$/, 'w/index.php')
+    end
+
     def get_wikitext(title)
-      @conn.get '/w/index.php', action: 'raw', title: title
+      @conn.get index_url, action: 'raw', title: title
     end
 
     def list(type, params = {})
