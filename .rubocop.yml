@@ -1,8 +1,13 @@
+require:
+  - rubocop-rake
+  - rubocop-rspec
+
 AllCops:
   TargetRubyVersion: 2.5
   StyleGuideCopsOnly: true
+  NewCops: enable
 
-Metrics/LineLength:
+Layout/LineLength:
   Max: 100
 
 Metrics/MethodLength:
@@ -11,7 +16,7 @@ Metrics/MethodLength:
 Style/Alias:
   Enabled: false
 
-Style/DotPosition:
+Layout/DotPosition:
   EnforcedStyle: trailing
 
 Style/SignalException:
@@ -23,6 +28,8 @@ Style/StringLiterals:
 Style/TrivialAccessors:
   ExactNameMatch: true
 
-# See https://github.com/bbatsov/rubocop/issues/4637
-SpaceAroundOperators:
+RSpec/MultipleMemoizedHelpers:
+  Max: 15
+
+RSpec/MultipleExpectations:
   Enabled: false

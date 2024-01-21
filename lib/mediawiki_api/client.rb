@@ -1,3 +1,5 @@
+# typed: true
+
 require 'faraday'
 require 'faraday-cookie_jar'
 require 'faraday/multipart'
@@ -6,10 +8,15 @@ require 'json'
 
 require 'mediawiki_api/exceptions'
 require 'mediawiki_api/response'
+require 'sorbet-runtime'
+require 'benchmark'
 
 module MediawikiApi
+  extend T::Sig
   # high level client for MediaWiki
   class Client
+    extend T::Sig
+
     FORMAT = 'json'
 
     attr_reader :cookies
@@ -18,6 +25,7 @@ module MediawikiApi
 
     alias_method :logged_in?, :logged_in
 
+    sig { params(api_url: String, log: T::Boolean, index_url: T.nilable(String)).void}
     def initialize(api_url, log: false, index_url: nil)
       @cookies = HTTP::CookieJar.new
       @api_url = api_url
@@ -47,6 +55,7 @@ module MediawikiApi
 
     # set the OAuth access token to be used for all subsequent actions
     # (obtaining the token is up to you)
+    sig { params(access_token: T.any(String, Symbol)).void}
     def oauth_access_token(access_token)
       @conn.headers['Authorization'] = "Bearer #{access_token}"
     end
@@ -118,7 +127,7 @@ module MediawikiApi
     end
 
     def index_url
-      @index_url if @index_url
+      return @index_url if @index_url
       @api_url.gsub(/api.php$/, 'w/index.php')
     end
 

@@ -9,7 +9,7 @@ Gem::Specification.new do |spec|
     'Amir Aharoni', 'Asaf Bartov', 'Chris McMahon', 'Dan Duvall', 'Jeff Hall', 'Juliusz Gonera',
     'Zeljko Filipin'
   ]
-  spec.email         = [
+  spec.email = [
     'amir.aharoni@mail.huji.ac.il', 'asaf.bartov@gmail.com', 'cmcmahon@wikimedia.org',
     'dduvall@wikimedia.org', 'jhall@wikimedia.org', 'jgonera@wikimedia.org',
     'zeljko.filipin@gmail.com'
@@ -29,6 +29,7 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency 'faraday-cookie_jar'
   spec.add_runtime_dependency 'faraday-multipart'
   spec.add_runtime_dependency 'faraday-follow_redirects'
+  spec.add_runtime_dependency 'sorbet-runtime'
 
   # Most developer dependencies can float to latest, but stick to RSpec 3
   # since that would likely introduce breaking changes (bundler, rubocop
@@ -42,4 +43,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'webmock'
   spec.add_development_dependency 'redcarpet'
   spec.add_development_dependency 'yard'
+  spec.add_development_dependency 'sorbet'
 end

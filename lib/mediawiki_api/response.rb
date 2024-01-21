@@ -1,5 +1,8 @@
+# typed: true
+
 require 'forwardable'
 require 'json'
+require 'sorbet-runtime'
 
 module MediawikiApi
   # Provides access to a parsed MediaWiki API responses.
@@ -14,6 +17,7 @@ module MediawikiApi
   #   response.data # => { "some" => "data" }
   #
   class Response
+    extend T::Sig
     extend Forwardable
 
     def_delegators :@response, :status, :success?

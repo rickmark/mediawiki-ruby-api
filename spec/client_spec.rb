@@ -5,14 +5,14 @@ require 'support/request_helpers'
 describe MediawikiApi::Client do
   include MediawikiApi::RequestHelpers
 
-  let(:client) { MediawikiApi::Client.new(api_url) }
+  subject(:client) { default_client }
 
-  subject { client }
+  let(:default_client) { MediawikiApi::Client.new(api_url)  }
 
   body_base = { cookieprefix: 'prefix', sessionid: '123' }
 
   describe '#action' do
-    subject { client.action(action, params) }
+    subject(:something_result) { client.action(action, params) }
 
     let(:action) { 'something' }
     let(:token_type) { 'csrf' }
@@ -36,7 +36,7 @@ describe MediawikiApi::Client do
     it { is_expected.to be_a(MediawikiApi::Response) }
 
     it 'makes requests for both the right token and API action' do
-      subject
+      something_result
       expect(@token_request).to have_been_made
       expect(@request).to have_been_made
     end
@@ -50,18 +50,18 @@ describe MediawikiApi::Client do
       end
 
       it 'does not request a token' do
-        subject
+        something_result
         expect(@token_request).to_not have_been_made
       end
 
       it 'makes the action request without a token' do
-        subject
+        something_result
         expect(@request_without_token).to have_been_made
         expect(@request_with_token).to_not have_been_made
       end
     end
 
-    context 'given parameters' do
+    context 'when given parameters' do
       let(:params) { { foo: 'value' } }
 
       before do
@@ -69,13 +69,13 @@ describe MediawikiApi::Client do
       end
 
       it 'includes them' do
-        subject
+        something_result
         expect(@request_with_parameters).to have_been_made
       end
     end
 
-    context 'parameter compilation' do
-      context 'negated parameters' do
+    context 'with parameter compilation' do
+      context 'without parameters' do
         let(:params) { { foo: false } }
 
         before do
@@ -84,13 +84,13 @@ describe MediawikiApi::Client do
         end
 
         it 'omits the parameter' do
-          subject
+          something_result
           expect(@request_with_parameter).to_not have_been_made
           expect(@request_without_parameter).to have_been_made
         end
       end
 
-      context 'array parameters' do
+      context 'with array parameters' do
         let(:params) { { foo: %w[one two] } }
 
         before do
@@ -98,7 +98,7 @@ describe MediawikiApi::Client do
         end
 
         it 'pipe delimits values' do
-          subject
+          something_result
           expect(@request).to have_been_made
         end
       end
@@ -108,8 +108,8 @@ describe MediawikiApi::Client do
       let(:response_status) { 403 }
 
       it 'raises an HttpError' do
-        expect { subject }.to raise_error(MediawikiApi::HttpError,
-                                          'unexpected HTTP response (403)')
+        expect { something_result }.to raise_error(MediawikiApi::HttpError,
+                                                   'unexpected HTTP response (403)')
       end
     end
 
@@ -117,8 +117,8 @@ describe MediawikiApi::Client do
       let(:response_status) { 502 }
 
       it 'raises an HttpError' do
-        expect { subject }.to raise_error(MediawikiApi::HttpError,
-                                          'unexpected HTTP response (502)')
+        expect { something_result }.to raise_error(MediawikiApi::HttpError,
+                                                   'unexpected HTTP response (502)')
       end
     end
 
@@ -127,17 +127,18 @@ describe MediawikiApi::Client do
       let(:response_body) { { error: { info: 'detailed message', code: 'code' } } }
 
       it 'raises an ApiError' do
-        expect { subject }.to raise_error(MediawikiApi::ApiError, 'detailed message (code)')
+        expect do
+ something_result end.to raise_error(MediawikiApi::ApiError, 'detailed message (code)')
       end
     end
 
-    context 'given a bad token type' do
+    context 'with a bad token type' do
       let(:params) { { token_type: token_type } }
       let(:token_type) { 'badtoken' }
       let(:token_warning) { "Unrecognized value for parameter 'type': badtoken" }
 
       it 'raises a TokenError' do
-        expect { subject }.to raise_error(MediawikiApi::TokenError, token_warning)
+        expect { something_result }.to raise_error(MediawikiApi::TokenError, token_warning)
       end
     end
 
@@ -162,7 +163,7 @@ describe MediawikiApi::Client do
       end
 
       it 'raises no exception' do
-        expect { subject }.to_not raise_error
+        expect { something_result }.to_not raise_error
       end
     end
 
@@ -176,11 +177,11 @@ describe MediawikiApi::Client do
       end
 
       it 'rescues the initial exception' do
-        expect { subject }.to_not raise_error
+        expect { something_result }.to_not raise_error
       end
 
       it 'automatically retries the request' do
-        subject
+        something_result
         expect(@token_request).to have_been_made.twice
         expect(@request).to have_been_made.twice
       end
@@ -188,13 +189,13 @@ describe MediawikiApi::Client do
   end
 
   describe '#cookies' do
-    subject { client.cookies }
+    subject(:cookies) { client.cookies }
 
     it { is_expected.to be_a(HTTP::CookieJar) }
 
     context 'when a new cookie is added' do
       before do
-        client.cookies.add(HTTP::Cookie.new('cookie_name', '1', domain: 'localhost', path: '/'))
+        cookies.add(HTTP::Cookie.new('cookie_name', '1', domain: 'localhost', path: '/'))
       end
 
       it 'includes the cookie in subsequent requests' do
@@ -214,12 +215,12 @@ describe MediawikiApi::Client do
         with(body: { format: 'json', action: 'login', lgname: 'Test', lgpassword: 'qwe123' }).
         to_return(body: { login: body_base.merge(result: 'Success') }.to_json)
 
-      subject.log_in 'Test', 'qwe123'
-      expect(subject.logged_in).to be true
+      client.log_in 'Test', 'qwe123'
+      expect(client.logged_in).to be true
     end
 
     context 'when API returns NeedToken' do
-      context 'and a token was not given' do
+      context 'with a token was not given' do
         before do
           stub_login_request('Test', 'qwe123').
             to_return(
@@ -233,27 +234,27 @@ describe MediawikiApi::Client do
         end
 
         it 'logs in' do
-          response = subject.log_in('Test', 'qwe123')
+          response = client.log_in('Test', 'qwe123')
 
           expect(response).to include('result' => 'Success')
-          expect(subject.logged_in).to be true
+          expect(client.logged_in).to be true
         end
 
         it 'sends second request with token and cookies' do
-          subject.log_in('Test', 'qwe123')
+          client.log_in('Test', 'qwe123')
 
           expect(@success_req).to have_been_requested
         end
       end
 
-      context 'but a token was already provided' do
-        subject { client.log_in('Test', 'qwe123', '123') }
+      context 'when a token was already provided' do
+        subject(:log_in) { client.log_in('Test', 'qwe123', '123') }
 
-        it 'should raise a LoginError' do
+        it 'raises a LoginError' do
           stub_login_request('Test', 'qwe123', '123').
             to_return(body: { login: body_base.merge(result: 'NeedToken', token: '456') }.to_json)
 
-          expect { subject }.to raise_error(MediawikiApi::LoginError)
+          expect { log_in }.to raise_error(MediawikiApi::LoginError)
         end
       end
     end
@@ -265,19 +266,19 @@ describe MediawikiApi::Client do
       end
 
       it 'does not log in' do
-        expect { subject.log_in 'Test', 'qwe123' }.to raise_error(MediawikiApi::LoginError)
-        expect(subject.logged_in).to be false
+        expect { client.log_in 'Test', 'qwe123' }.to raise_error(MediawikiApi::LoginError)
+        expect(client.logged_in).to be false
       end
 
       it 'raises error with proper message' do
-        expect { subject.log_in 'Test', 'qwe123' }.to raise_error(MediawikiApi::LoginError,
-                                                                  'EmptyPass')
+        expect { client.log_in 'Test', 'qwe123' }.to raise_error(MediawikiApi::LoginError,
+                                                                 'EmptyPass')
       end
     end
   end
 
   describe '#create_page' do
-    subject { client.create_page(title, text) }
+    subject(:create_result) { client.create_page(title, text) }
 
     let(:title) { 'Test' }
     let(:text) { 'test123' }
@@ -290,7 +291,7 @@ describe MediawikiApi::Client do
     end
 
     it 'makes the right request' do
-      subject
+      create_result
       expect(@edit_request).to have_been_requested
     end
   end
@@ -306,7 +307,7 @@ describe MediawikiApi::Client do
     end
 
     it 'deletes a page using a delete token' do
-      subject.delete_page('Test', 'deleting')
+      client.delete_page('Test', 'deleting')
       expect(@delete_req).to have_been_requested
     end
 
@@ -314,7 +315,7 @@ describe MediawikiApi::Client do
   end
 
   describe '#edit' do
-    subject { client.edit(params) }
+    subject(:edit_result) { client.edit(params) }
 
     let(:params) { {} }
     let(:response) { { edit: {} } }
@@ -325,15 +326,15 @@ describe MediawikiApi::Client do
     end
 
     it 'makes the request' do
-      subject
+      edit_result
       expect(@edit_request).to have_been_requested
     end
 
-    context 'upon an edit failure' do
+    context 'when an edit fails' do
       let(:response) { { edit: { result: 'Failure' } } }
 
       it 'raises an EditError' do
-        expect { subject }.to raise_error(MediawikiApi::EditError)
+        expect { edit_result }.to raise_error(MediawikiApi::EditError)
       end
     end
   end
@@ -344,7 +345,7 @@ describe MediawikiApi::Client do
     end
 
     it 'fetches a page' do
-      subject.get_wikitext('Test')
+      client.get_wikitext('Test')
       expect(@get_req).to have_been_requested
     end
   end
@@ -362,7 +363,7 @@ describe MediawikiApi::Client do
           with(body: { format: 'json', action: 'createaccount', name: 'Test', password: 'qwe123' }).
           to_return(body: { createaccount: body_base.merge(result: 'Success') }.to_json)
 
-        expect(subject.create_account('Test', 'qwe123')).to include('result' => 'Success')
+        expect(client.create_account('Test', 'qwe123')).to include('result' => 'Success')
       end
 
       context 'when API returns NeedToken' do
@@ -383,11 +384,11 @@ describe MediawikiApi::Client do
         end
 
         it 'creates an account' do
-          expect(subject.create_account('Test', 'qwe123')).to include('result' => 'Success')
+          expect(client.create_account('Test', 'qwe123')).to include('result' => 'Success')
         end
 
         it 'sends second request with token and cookies' do
-          subject.create_account 'Test', 'qwe123'
+          client.create_account 'Test', 'qwe123'
           expect(@success_req).to have_been_requested
         end
       end
@@ -403,7 +404,7 @@ describe MediawikiApi::Client do
         end
 
         it 'raises error with proper message' do
-          expect { subject.create_account 'Test', 'qwe123' }.to raise_error(
+          expect { client.create_account 'Test', 'qwe123' }.to raise_error(
             MediawikiApi::CreateAccountError,
             'WhoKnows'
           )
@@ -424,7 +425,7 @@ describe MediawikiApi::Client do
         stub_request(:post, api_url).
           with(body: { action: 'query', format: 'json', meta: 'tokens', type: 'createaccount' }).
           to_return(body: { tokens: body_base.merge(foo: '12345\\+')  }.to_json)
-        expect { subject.create_account 'Test', 'qwe123' }.to raise_error(
+        expect { client.create_account 'Test', 'qwe123' }.to raise_error(
           MediawikiApi::CreateAccountError,
           'failed to get createaccount API token'
         )
@@ -443,7 +444,7 @@ describe MediawikiApi::Client do
                          createreturnurl: 'http://example.com', username: 'Test',
                          password: 'qwe123', retype: 'qwe123', createtoken: '12345\\+' }).
             to_return(body: { createaccount: body_base.merge(status: 'PASS') }.to_json)
-          expect(subject.create_account('Test', 'qwe123')).to include('status' => 'PASS')
+          expect(client.create_account('Test', 'qwe123')).to include('status' => 'PASS')
         end
 
         it 'raises an error when the API returns failure' do
@@ -454,7 +455,7 @@ describe MediawikiApi::Client do
             to_return(body: { createaccount: body_base.merge(
               status: 'FAIL', message: 'User exists!'
             ) }.to_json)
-          expect { subject.create_account 'Test', 'qwe123' }.to raise_error(
+          expect { client.create_account 'Test', 'qwe123' }.to raise_error(
             MediawikiApi::CreateAccountError,
             'User exists!'
           )
@@ -466,7 +467,7 @@ describe MediawikiApi::Client do
       stub_request(:post, api_url).
         with(body: { action: 'paraminfo', format: 'json', modules: 'createaccount' }).
         to_return(body: { paraminfo: body_base.merge(modules: []) }.to_json)
-      expect { subject.create_account 'Test', 'qwe123' }.to raise_error(
+      expect { client.create_account 'Test', 'qwe123' }.to raise_error(
         MediawikiApi::CreateAccountError,
         'unexpected API response format'
       )
@@ -483,7 +484,7 @@ describe MediawikiApi::Client do
     end
 
     it 'sends a valid watch request' do
-      subject.watch_page('Test')
+      client.watch_page('Test')
       expect(@watch_req).to have_been_requested
     end
   end
@@ -499,7 +500,7 @@ describe MediawikiApi::Client do
     end
 
     it 'sends a valid unwatch request' do
-      subject.unwatch_page('Test')
+      client.unwatch_page('Test')
       expect(@watch_req).to have_been_requested
     end
   end
